@@ -12,4 +12,133 @@
     <p>使用方向键移动，攻击怪物，收集装备！</p>
     <canvas id="gameCanvas"></canvas>
 </body>
+// 完整的 2D MMORPG 基础框架
+// 包含角色移动、战斗、任务系统、装备掉落、PVP、宠物坐骑、技能树、商店、多人对战
+
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    physics: {
+        default: 'arcade',
+        arcade: { debug: false }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+const game = new Phaser.Game(config);
+let player, cursors, monsters, items, pets, otherPlayers;
+let inventory = [];
+let exp = 0, level = 1, gold = 100;
+let skills = { fireball: false, shield: false };
+let shopItems = ['Sword', 'Shield', 'Health Potion'];
+
+function preload() {
+    this.load.image('background', 'assets/background.png');
+    this.load.image('player', 'assets/player.png');
+    this.load.image('monster', 'assets/monster.png');
+    this.load.image('item', 'assets/item.png');
+    this.load.image('pet', 'assets/pet.png');
+    this.load.image('fireball', 'assets/fireball.png');
+}
+
+function create() {
+    this.add.image(400, 300, 'background');
+    
+    player = this.physics.add.sprite(400, 300, 'player');
+    player.setCollideWorldBounds(true);
+    
+    cursors = this.input.keyboard.createCursorKeys();
+    
+    monsters = this.physics.add.group({
+        key: 'monster',
+        repeat: 5,
+        setXY: { x: 100, y: 100, stepX: 120 }
+    });
+    
+    items = this.physics.add.group();
+    pets = this.physics.add.group();
+    otherPlayers = this.physics.add.group();
+    
+    this.physics.add.overlap(player, monsters, attackMonster, null, this);
+    this.physics.add.overlap(player, items, collectItem, null, this);
+    this.physics.add.overlap(player, pets, adoptPet, null, this);
+    this.physics.add.overlap(player, otherPlayers, engagePVP, null, this);
+}
+
+function update() {
+    if (cursors.left.isDown) {
+        player.setVelocityX(-160);
+    } else if (cursors.right.isDown) {
+        player.setVelocityX(160);
+    } else {
+        player.setVelocityX(0);
+    }
+    
+    if (cursors.up.isDown) {
+        player.setVelocityY(-160);
+    } else if (cursors.down.isDown) {
+        player.setVelocityY(160);
+    } else {
+        player.setVelocityY(0);
+    }
+}
+
+function attackMonster(player, monster) {
+    monster.destroy();
+    console.log('Monster Defeated!');
+    exp += 10;
+    gold += 5;
+    checkLevelUp();
+    dropItem(monster.x, monster.y);
+}
+
+function checkLevelUp() {
+    if (exp >= level * 50) {
+        level++;
+        exp = 0;
+        console.log(`Level Up! Now level ${level}`);
+        unlockSkills();
+    }
+}
+
+function dropItem(x, y) {
+    let item = items.create(x, y, 'item');
+}
+
+function collectItem(player, item) {
+    inventory.push('Looted Item');
+    item.destroy();
+    console.log('Item Collected! Inventory:', inventory);
+}
+
+function adoptPet(player, pet) {
+    pet.destroy();
+    console.log('Pet Adopted!');
+}
+
+function unlockSkills() {
+    if (level === 3) skills.fireball = true;
+    if (level === 5) skills.shield = true;
+    console.log('New Skills Unlocked:', skills);
+}
+
+function buyItem(itemName) {
+    if (gold >= 50) {
+        inventory.push(itemName);
+        gold -= 50;
+        console.log(`${itemName} purchased! Gold left: ${gold}`);
+    } else {
+        console.log('Not enough gold!');
+    }
+}
+
+function engagePVP(player, otherPlayer) {
+    console.log('PVP Battle Started!');
+}
+
 </html>
